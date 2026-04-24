@@ -31,30 +31,71 @@ if (-not (Test-Path ".env")) {
     $webuiSecret = New-HexSecret 32
     $postgresPassword = New-HexSecret 24
 
-    @"
+    # Create a sample env file for users to edit
+    $sample = @"
 OPENAI_API_KEY=
 ANTHROPIC_API_KEY=
 GOOGLE_API_KEY=
 OPENROUTER_API_KEY=
-LITELLM_KEY=$litellmKey
-WEBUI_SECRET_KEY=$webuiSecret
+LITELLM_KEY=
+WEBUI_SECRET_KEY=
 POSTGRES_USER=postgres
 POSTGRES_DB=postgres
-POSTGRES_PASSWORD=$postgresPassword
+POSTGRES_PASSWORD=
 DATABASE_HOST=postgres
 DATABASE_PORT=5432
 DATABASE_NAME=postgres
 DATABASE_USER=postgres
 DATABASE_USERNAME=postgres
-DATABASE_PASSWORD=$postgresPassword
+DATABASE_PASSWORD=
 DATABASE_SCHEMA=public
-DATABASE_URL=postgresql://postgres:$postgresPassword@postgres:5432/postgres
+DATABASE_URL=postgresql://postgres:POSTGRES_PASSWORD@postgres:5432/postgres
 WEBUI_ADMIN_EMAIL=
 WEBUI_ADMIN_PASSWORD=
 WEBUI_ADMIN_NAME=Admin
-"@ | Set-Content -Path ".env" -NoNewline
+"@
+    Set-Content -Path ".env.sample" -Value $sample -NoNewline
 
-    Write-Host "Created .env with generated local secrets." -ForegroundColor Green
+    Write-Host "Created .env.sample. Generated secrets will be stored in the Windows secret store when possible." -ForegroundColor Green
+
+    # Prefer SecretManagement module
+    if (Get-Command -Name Set-Secret -ErrorAction SilentlyContinue) {
+        try {
+            Set-Secret -Name 'LITELLM_KEY' -Secret (ConvertTo-SecureString $litellmKey -AsPlainText -Force) -ErrorAction Stop
+            Set-Secret -Name 'WEBUI_SECRET_KEY' -Secret (ConvertTo-SecureString $webuiSecret -AsPlainText -Force) -ErrorAction Stop
+            Set-Secret -Name 'POSTGRES_PASSWORD' -Secret (ConvertTo-SecureString $postgresPassword -AsPlainText -Force) -ErrorAction Stop
+            Write-Host "Stored generated secrets in SecretManagement vault." -ForegroundColor Green
+        } catch {
+            Write-Host "Failed to store secrets in SecretManagement: $_" -ForegroundColor Yellow
+            $secureDir = Join-Path $env:LOCALAPPDATA 'ai-stack-secrets'
+            New-Item -ItemType Directory -Force -Path $secureDir | Out-Null
+            $out = @"
+LITELLM_KEY=$litellmKey
+WEBUI_SECRET_KEY=$webuiSecret
+POSTGRES_PASSWORD=$postgresPassword
+"@
+            Set-Content -Path (Join-Path $secureDir '.env.local') -Value $out -NoNewline
+            Write-Host "Stored generated secrets to $secureDir\.env.local" -ForegroundColor Yellow
+        }
+    }
+    elseif (Get-Command -Name New-StoredCredential -ErrorAction SilentlyContinue) {
+        # CredentialManager module
+        New-StoredCredential -Target "ai-stack:LITELLM_KEY" -UserName "api" -Password $litellmKey -Persist LocalMachine
+        New-StoredCredential -Target "ai-stack:WEBUI_SECRET_KEY" -UserName "api" -Password $webuiSecret -Persist LocalMachine
+        New-StoredCredential -Target "ai-stack:POSTGRES_PASSWORD" -UserName "api" -Password $postgresPassword -Persist LocalMachine
+        Write-Host "Stored generated secrets in Credential Manager (ai-stack:* targets)." -ForegroundColor Green
+    }
+    else {
+        $secureDir = Join-Path $env:LOCALAPPDATA 'ai-stack-secrets'
+        New-Item -ItemType Directory -Force -Path $secureDir | Out-Null
+        $out = @"
+LITELLM_KEY=$litellmKey
+WEBUI_SECRET_KEY=$webuiSecret
+POSTGRES_PASSWORD=$postgresPassword
+"@
+        Set-Content -Path (Join-Path $secureDir '.env.local') -Value $out -NoNewline
+        Write-Host "Secret store not available. Stored generated secrets to $secureDir\.env.local" -ForegroundColor Yellow
+    }
 } else {
     Write-Host ".env already exists; leaving it unchanged." -ForegroundColor Yellow
 }

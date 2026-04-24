@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import argparse
+import os
 import datetime as dt
 import json
 import platform
@@ -112,14 +113,45 @@ def template_env_path() -> Path:
 
 def read_env(path: Path) -> dict[str, str]:
     data: dict[str, str] = {}
-    if not path.exists():
-        return data
-    for raw_line in path.read_text(encoding="utf-8").splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-        key, value = line.split("=", 1)
-        data[key.strip()] = value.strip()
+    if path.exists():
+        for raw_line in path.read_text(encoding="utf-8").splitlines():
+            line = raw_line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            key, value = line.split("=", 1)
+            data[key.strip()] = value.strip()
+
+    # On Windows, try to augment missing secrets from the Windows secret store
+    try:
+        if platform.system().lower().startswith("windows"):
+            helper = ROOT / "scripts" / "get-secret.ps1"
+            if helper.exists():
+                for key in SECRETS:
+                    val = data.get(key)
+                    if not is_set(val):
+                        try:
+                            proc = subprocess.run([
+                                "powershell",
+                                "-NoProfile",
+                                "-ExecutionPolicy",
+                                "Bypass",
+                                "-File",
+                                str(helper),
+                                "-Name",
+                                key,
+                            ], capture_output=True, text=True)
+                            if proc.returncode == 0:
+                                out = proc.stdout.strip()
+                                if out:
+                                    data[key] = out
+                                    # export into process environment so docker subprocesses see it
+                                    os.environ[key] = out
+                        except Exception:
+                            # ignore retrieval failures per-key
+                            pass
+    except Exception:
+        pass
+
     return data
 
 
