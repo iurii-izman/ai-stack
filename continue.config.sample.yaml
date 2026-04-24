@@ -1,0 +1,32 @@
+# Continue.dev sample config for local LiteLLM Proxy
+# Replace apiKey with the value of LITELLM_KEY from your .env file.
+# Use a verified LiteLLM model name, for example claude-sonnet.
+
+name: AI Stack Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: LiteLLM Proxy (all models)
+    provider: openai
+    model: claude-sonnet
+    apiBase: http://127.0.0.1:4000
+    # REPLACE "YOUR_LITELLM_KEY_HERE" with your actual LITELLM_KEY from .env
+    apiKey: "YOUR_LITELLM_KEY_HERE"
+
+# Example local models:
+#  - name: LiteLLM Claude Opus
+#    provider: openai
+#    model: claude-4-opus
+#    apiBase: http://localhost:4000
+#  - name: LiteLLM GPT-4
+#    provider: openai
+#    model: openai-gpt4
+#    apiBase: http://localhost:4000
+#    apiKey: sk-1234
+#
+#  - name: LiteLLM Claude Opus
+#    provider: openai
+#    model: claude-4-opus
+#    apiBase: http://localhost:4000
+#    apiKey: sk-1234

@@ -1,0 +1,148 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: ai-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    command:
+      - postgres
+      - -c
+      - checkpoint_completion_target=0.9
+      - -c
+      - wal_buffers=16MB
+      - -c
+      - default_statistics_target=100
+    ports:
+      - "5432:5432"
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+    mem_limit: 512m
+    mem_reservation: 128m
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    profiles: ["hot", "warm", "aider"]
+    networks:
+      - ai_stack_net
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-latest
+    container_name: ai-litellm
+    ports:
+      - "4000:4000"
+    env_file:
+      - .env
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_KEY}
+      DATABASE_URL: ${DATABASE_URL}
+    volumes:
+      - ./litellm-config.yaml:/app/config.yaml
+    command: --config /app/config.yaml
+    restart: unless-stopped
+    mem_limit: 1g
+    mem_reservation: 256m
+    depends_on:
+      postgres:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import os, urllib.request; req = urllib.request.Request('http://localhost:4000/health', headers={'Authorization': 'Bearer ' + os.environ['LITELLM_MASTER_KEY']}); urllib.request.urlopen(req, timeout=5).read()",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    profiles: ["hot", "warm", "aider"]
+    networks:
+      - ai_stack_net
+
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: ai-open-webui
+    ports:
+      - "3000:8080"
+    env_file:
+      - .env
+    environment:
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY}
+      WEBUI_URL: http://localhost:3000
+      ENABLE_PERSISTENT_CONFIG: "False"
+      DATABASE_URL: ${DATABASE_URL}
+      DATABASE_SCHEMA: ${DATABASE_SCHEMA}
+      OPENAI_API_KEY: ${LITELLM_KEY}
+      OPENAI_API_BASE_URL: http://litellm:4000/v1
+      ENABLE_OLLAMA_API: "true"
+      OLLAMA_BASE_URL: http://host.docker.internal:11434
+    restart: unless-stopped
+    depends_on:
+      litellm:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:8080/', timeout=5).read()",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 180s
+    profiles: ["warm"]
+    mem_limit: 1536m
+    mem_reservation: 512m
+    volumes:
+      - open_webui_data:/app/backend/data
+    networks:
+      - ai_stack_net
+
+  aider:
+    image: paulgauthier/aider:latest
+    container_name: ai-aider
+    env_file:
+      - .env
+    environment:
+      OPENAI_API_KEY: ${LITELLM_KEY}
+      OPENAI_API_BASE: http://litellm:4000/v1
+      STREAMLIT_SERVER_ADDRESS: 0.0.0.0
+      STREAMLIT_SERVER_PORT: 8501
+      STREAMLIT_SERVER_HEADLESS: "true"
+    volumes:
+      - .:/workspace
+      - aider_cache:/tmp/.aider
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    ports:
+      - "8501:8501"
+    profiles: ["aider"]
+    depends_on:
+      litellm:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - ai_stack_net
+
+networks:
+  ai_stack_net:
+    driver: bridge
+
+volumes:
+  pg_data:
+  aider_cache:
+  open_webui_data:

@@ -1,0 +1,70 @@
+{
+  "modules": [
+    {
+      "id": "search",
+      "status": "planned",
+      "role": "Expose searchable memory or document retrieval without changing the core runtime contract.",
+      "activation_surface": "Optional compose profile and dashboard card once implemented.",
+      "dependencies": [
+        "litellm",
+        "postgres"
+      ],
+      "guardrails": [
+        "Must declare storage ownership and backup semantics.",
+        "Must not appear in the dashboard until the service is real."
+      ]
+    },
+    {
+      "id": "vector-db",
+      "status": "planned",
+      "role": "Provide vector indexing as a dedicated module rather than smuggling it into unrelated services.",
+      "activation_surface": "Separate optional profile with explicit data path ownership.",
+      "dependencies": [
+        "postgres"
+      ],
+      "guardrails": [
+        "Must define restore path before being considered supported.",
+        "Must document memory and storage expectations."
+      ]
+    },
+    {
+      "id": "observability",
+      "status": "planned",
+      "role": "Add logs and metrics collection when the stack needs it, without pretending the current repo already has observability.",
+      "activation_surface": "New optional profile plus generated dashboard section.",
+      "dependencies": [
+        "docker-compose.yml"
+      ],
+      "guardrails": [
+        "Must stay optional and justified by actual operating needs.",
+        "Must not replace the current lightweight doctor and smoke checks unless it is demonstrably better."
+      ]
+    },
+    {
+      "id": "code-tools",
+      "status": "planned",
+      "role": "Add extra coding helpers beyond Aider without coupling them to the UI module.",
+      "activation_surface": "Coding-oriented optional profile.",
+      "dependencies": [
+        "litellm"
+      ],
+      "guardrails": [
+        "Must preserve the on-demand nature of the coding module unless a persistent daemon is justified.",
+        "Must document how credentials flow through LiteLLM."
+      ]
+    },
+    {
+      "id": "browser-tools",
+      "status": "planned",
+      "role": "Introduce browser automation as an explicit module rather than implying it from the dashboard.",
+      "activation_surface": "Optional integration profile and dedicated docs section.",
+      "dependencies": [
+        "open-webui"
+      ],
+      "guardrails": [
+        "Must state whether it is host-managed or compose-managed.",
+        "Must define security boundaries and supported execution path."
+      ]
+    }
+  ]
+}

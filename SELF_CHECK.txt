@@ -1,0 +1,77 @@
+SELF-CHECK REPORT - AI Stack
+Date: 2026-04-24
+Generated at: 2026-04-24T23:15:42+03:00
+Project path: C:\Dev\ai-stack
+Version: 0.2.0
+
+1. Doctor
+- Overall: warn
+- PASS: python - Python 3.12.10
+- PASS: docker-cli - Docker CLI available.
+- PASS: docker-daemon - Docker daemon is reachable.
+- PASS: compose-profiles - Compose profiles match: aider, hot, warm.
+- PASS: compose-hot - `docker compose --profile hot config` passed.
+- PASS: compose-warm - `docker compose --profile warm config` passed.
+- PASS: compose-aider - `docker compose --profile aider config` passed.
+- PASS: .env - .env present.
+- PASS: env-required - Required local env keys are populated.
+- PASS: env-placeholders - No placeholder env values detected.
+- WARN: provider-keys - Some optional cloud provider keys are missing: OPENROUTER_API_KEY.
+- PASS: port-5432 - postgres publishes localhost:5432 and runtime state is Up 27 minutes (healthy).
+- PASS: port-4000 - litellm publishes localhost:4000 and runtime state is Up 27 minutes (healthy).
+- PASS: port-3000 - open-webui publishes localhost:3000 and runtime state is Up 22 minutes (healthy).
+- PASS: port-8501 - Port 8501 is currently free while aider is stopped.
+- PASS: host-ollama - ollama endpoint port 11434 is reachable.
+- PASS: ollama-cli - Ollama CLI available.
+- PASS: ollama-endpoint - Ollama endpoint reachable (HTTP 200).
+
+2. Runtime status
+- Snapshot: 2026-04-24T23:10:27+03:00
+- postgres: state=running, health=healthy, ports=5432
+- litellm: state=running, health=pass, ports=4000
+- open-webui: state=running, health=pass, ports=3000
+- aider: state=stopped, health=n/a, ports=8501
+- ollama: state=running, health=pass, ports=11434
+
+3. Smoke
+- Overall: pass
+- PASS: compose-hot - Profile `hot` resolves.
+- PASS: compose-warm - Profile `warm` resolves.
+- PASS: compose-aider - Profile `aider` resolves.
+- PASS: postgres-runtime - Up 27 minutes (healthy)
+- PASS: litellm-endpoint - http://localhost:4000/health -> HTTP 200
+- PASS: open-webui-endpoint - http://localhost:3000/ -> HTTP 200
+- PASS: ollama-endpoint - http://localhost:11434/api/tags -> HTTP 200
+
+4. Consistency validation
+- Overall: pass
+- PASS: file:README.md - README.md exists.
+- PASS: file:docs/ARCHITECTURE.md - docs/ARCHITECTURE.md exists.
+- PASS: file:docs/OPERATIONS.md - docs/OPERATIONS.md exists.
+- PASS: file:docs/TROUBLESHOOTING.md - docs/TROUBLESHOOTING.md exists.
+- PASS: file:docs/KNOWN_LIMITATIONS.md - docs/KNOWN_LIMITATIONS.md exists.
+- PASS: file:dashboards/index.html - dashboards/index.html exists.
+- PASS: file:ops/dashboard.config.json - ops/dashboard.config.json exists.
+- PASS: file:ops/extensions.catalog.json - ops/extensions.catalog.json exists.
+- PASS: file:docker-compose.yml - docker-compose.yml exists.
+- PASS: file:litellm-config.yaml - litellm-config.yaml exists.
+- PASS: file:.env.template - .env.template exists.
+- PASS: file:stack.ps1 - stack.ps1 exists.
+- PASS: file:stack.sh - stack.sh exists.
+- PASS: compose-profile-set - Manifest profiles ['aider', 'hot', 'warm']; compose profiles ['aider', 'hot', 'warm'].
+- PASS: compose-service-set - Manifest services ['aider', 'litellm', 'open-webui', 'postgres']; compose services ['aider', 'litellm', 'open-webui', 'postgres'].
+- PASS: compose-volume-set - Manifest volumes ['aider_cache', 'open_webui_data', 'pg_data']; compose volumes ['aider_cache', 'open_webui_data', 'pg_data'].
+- PASS: env-template-required-keys - All required env keys exist in .env.template.
+- PASS: env-current-required-keys - All required env keys exist in .env.
+- PASS: module:core - core maps to compose profile `hot`.
+- PASS: module:ui - ui maps to compose profile `warm`.
+- PASS: module:coding - coding maps to compose profile `aider`.
+- PASS: docs-links - All local markdown links resolve.
+- PASS: dashboard-files - Only configured dashboard outputs are present.
+- PASS: dashboard-doc-links - Dashboard documentation links resolve.
+
+5. Known limitations
+- Ollama remains a host-managed dependency and is not started or stopped by Docker Compose.
+- The static dashboard shows generated snapshots rather than live telemetry.
+- Open WebUI can take longer on the first warm start because it performs migrations and asset initialization.
+- The coding module is intentionally on-demand rather than always running.

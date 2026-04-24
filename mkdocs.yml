@@ -1,0 +1,15 @@
+﻿site_name: Ultimate AI Stack
+theme:
+  name: material
+  palette:
+    scheme: slate
+    primary: indigo
+    accent: indigo
+nav:
+  - Home: index.md
+  - Architecture: ARCHITECTURE.md
+  - Operations: OPERATIONS.md
+  - Troubleshooting: TROUBLESHOOTING.md
+  - Known Limitations: KNOWN_LIMITATIONS.md
+  - Extensibility: EXTENSIBILITY.md
+  - Release: RELEASE.md

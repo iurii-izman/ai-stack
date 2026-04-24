@@ -1,0 +1,13 @@
+# Исключаем реальные секреты и приватное
+.env
+.env.*
+backups/
+data/
+config/*.yaml
+*.pyc
+__pycache__/
+# Docker volumes
+pg_data/
+# Logs and temp
+tmp_*.txt
+ops/state/

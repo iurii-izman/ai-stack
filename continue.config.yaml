@@ -1,0 +1,13 @@
+# Continue.dev config for the local LiteLLM proxy.
+# Replace apiKey with the LITELLM_KEY value from your .env file.
+
+name: AI Stack Config
+version: 1.0.0
+schema: v1
+
+models:
+  - name: LiteLLM Proxy
+    provider: openai
+    model: claude-sonnet
+    apiBase: http://127.0.0.1:4000/v1
+    apiKey: ${LITELLM_KEY}

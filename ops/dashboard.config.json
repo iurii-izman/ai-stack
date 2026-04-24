@@ -1,0 +1,47 @@
+{
+  "title": "AI Stack Dashboard",
+  "tagline": "Truth-driven operations snapshot generated from the current repo and runtime state.",
+  "quick_actions": [
+    {
+      "label": "Start core",
+      "command": ".\\stack.ps1 start core"
+    },
+    {
+      "label": "Start UI",
+      "command": ".\\stack.ps1 start ui"
+    },
+    {
+      "label": "Doctor",
+      "command": ".\\stack.ps1 doctor"
+    },
+    {
+      "label": "Smoke",
+      "command": ".\\stack.ps1 smoke"
+    },
+    {
+      "label": "Refresh artifacts",
+      "command": ".\\stack.ps1 refresh"
+    }
+  ],
+  "docs_links": [
+    {
+      "label": "Quick Start",
+      "path": "README.md"
+    },
+    {
+      "label": "Architecture",
+      "path": "docs/ARCHITECTURE.md"
+    },
+    {
+      "label": "Operations",
+      "path": "docs/OPERATIONS.md"
+    },
+    {
+      "label": "Troubleshooting",
+      "path": "docs/TROUBLESHOOTING.md"
+    }
+  ],
+  "generated_outputs": [
+    "dashboards/index.html"
+  ]
+}

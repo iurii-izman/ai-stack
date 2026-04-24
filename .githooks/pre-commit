@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Local pre-commit hook template.
+# To enable: git config core.hooksPath .githooks
+
+# Cross-platform pre-commit: prefer PowerShell checks on Windows
+if command -v pwsh >/dev/null 2>&1 || command -v powershell >/dev/null 2>&1; then
+	if command -v pwsh >/dev/null 2>&1; then
+		pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/check-secrets.ps1
+		pwsh -NoProfile -ExecutionPolicy Bypass -File ./scripts/validate-yaml.ps1
+	else
+		powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/check-secrets.ps1
+		powershell -NoProfile -ExecutionPolicy Bypass -File ./scripts/validate-yaml.ps1
+	fi
+	echo "Pre-commit checks passed (PowerShell path)."
+	exit 0
+fi
+
+# Fallback to shell scripts on Unix environments
+./scripts/check-secrets.sh
+./scripts/validate-yaml.sh
+
+echo "Pre-commit checks passed."

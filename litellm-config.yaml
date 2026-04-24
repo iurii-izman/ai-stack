@@ -1,0 +1,37 @@
+# LiteLLM aliases for the local AI stack.
+# Cloud aliases are active only when the matching API key is present in .env.
+# The Ollama alias is an optional lightweight local fallback.
+
+model_list:
+  - model_name: openai-gpt4
+    litellm_params:
+      model: openai/gpt-4o
+      api_key: os.environ/OPENAI_API_KEY
+
+  - model_name: claude-sonnet
+    litellm_params:
+      model: anthropic/claude-sonnet-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: claude-4-opus
+    litellm_params:
+      model: anthropic/claude-opus-4-6
+      api_key: os.environ/ANTHROPIC_API_KEY
+
+  - model_name: gemini-pro
+    litellm_params:
+      model: gemini/gemini-2.5-pro
+      api_key: os.environ/GOOGLE_API_KEY
+
+  - model_name: mistral-openrouter
+    litellm_params:
+      model: openrouter/mistral-large
+      api_key: os.environ/OPENROUTER_API_KEY
+
+  - model_name: ollama-coder-local
+    litellm_params:
+      model: ollama/qwen2.5-coder:1.5b
+      api_base: http://host.docker.internal:11434
+
+litellm_settings:
+  default_model: openai-gpt4

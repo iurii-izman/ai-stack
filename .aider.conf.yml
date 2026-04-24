@@ -1,0 +1,3 @@
+# Aider reads OPENAI_API_KEY from the container environment.
+model: claude-sonnet
+openai-api-base: http://litellm:4000/v1

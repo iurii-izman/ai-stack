@@ -1,0 +1,238 @@
+{
+  "project": {
+    "name": "AI Stack",
+    "slug": "ai-stack",
+    "version_file": "VERSION",
+    "compose_file": "docker-compose.yml",
+    "dashboard_output": "dashboards/index.html",
+    "self_check_output": "SELF_CHECK.txt"
+  },
+  "principles": [
+    "Prefer honest topology over marketing claims.",
+    "Keep the always-on runtime minimal and make optional surfaces explicit.",
+    "Use one machine-readable truth layer for docs, validation, and dashboard generation.",
+    "Do not pretend host-level dependencies are managed by Compose.",
+    "Favor small operational primitives over adding new heavy platform components."
+  ],
+  "supported_runtime_paths": [
+    {
+      "id": "windows-powershell",
+      "label": "Windows 11 PowerShell",
+      "status": "supported",
+      "requirements": [
+        "Docker Desktop with Compose v2",
+        "Python 3.11+",
+        "Optional: Ollama on the host"
+      ],
+      "entrypoint": ".\\stack.ps1"
+    },
+    {
+      "id": "wsl2-shell",
+      "label": "Windows 11 + WSL2 shell",
+      "status": "recommended",
+      "requirements": [
+        "Docker Desktop with WSL integration",
+        "Python 3.11+",
+        "Optional: Ollama on the Windows host"
+      ],
+      "entrypoint": "./stack.sh"
+    }
+  ],
+  "compose_profiles": {
+    "hot": {
+      "purpose": "Minimal always-on runtime.",
+      "services": [
+        "postgres",
+        "litellm"
+      ]
+    },
+    "warm": {
+      "purpose": "Adds the optional UI on top of hot.",
+      "services": [
+        "postgres",
+        "litellm",
+        "open-webui"
+      ]
+    },
+    "aider": {
+      "purpose": "Runs the on-demand coding helper with hot dependencies.",
+      "services": [
+        "postgres",
+        "litellm",
+        "aider"
+      ]
+    }
+  },
+  "logical_modules": {
+    "core": {
+      "compose_profile": "hot",
+      "purpose": "Minimal runtime required for model routing and persistence.",
+      "services": [
+        "postgres",
+        "litellm"
+      ]
+    },
+    "ui": {
+      "compose_profile": "warm",
+      "purpose": "Optional operator-facing UI.",
+      "services": [
+        "open-webui"
+      ]
+    },
+    "coding": {
+      "compose_profile": "aider",
+      "purpose": "On-demand coding helper that depends on the core module.",
+      "services": [
+        "aider"
+      ]
+    }
+  },
+  "services": {
+    "postgres": {
+      "kind": "compose",
+      "profiles": [
+        "hot",
+        "warm",
+        "aider"
+      ],
+      "module": "core",
+      "container_name": "ai-postgres",
+      "endpoint": null,
+      "ports": [
+        5432
+      ],
+      "required_env": [
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "POSTGRES_DB",
+        "DATABASE_URL"
+      ],
+      "volumes": [
+        "pg_data"
+      ],
+      "notes": "Primary datastore for LiteLLM and Open WebUI."
+    },
+    "litellm": {
+      "kind": "compose",
+      "profiles": [
+        "hot",
+        "warm",
+        "aider"
+      ],
+      "module": "core",
+      "container_name": "ai-litellm",
+      "endpoint": "http://localhost:4000/health",
+      "ports": [
+        4000
+      ],
+      "required_env": [
+        "LITELLM_KEY",
+        "DATABASE_URL"
+      ],
+      "notes": "OpenAI-compatible gateway backed by local and cloud providers."
+    },
+    "open-webui": {
+      "kind": "compose",
+      "profiles": [
+        "warm"
+      ],
+      "module": "ui",
+      "container_name": "ai-open-webui",
+      "endpoint": "http://localhost:3000/",
+      "ports": [
+        3000
+      ],
+      "required_env": [
+        "WEBUI_SECRET_KEY",
+        "DATABASE_URL",
+        "DATABASE_SCHEMA"
+      ],
+      "volumes": [
+        "open_webui_data"
+      ],
+      "notes": "Optional UI surface; should not be implied when the warm profile is down."
+    },
+    "aider": {
+      "kind": "compose",
+      "profiles": [
+        "aider"
+      ],
+      "module": "coding",
+      "container_name": "ai-aider",
+      "endpoint": "http://localhost:8501/",
+      "ports": [
+        8501
+      ],
+      "required_env": [
+        "LITELLM_KEY"
+      ],
+      "volumes": [
+        "aider_cache"
+      ],
+      "notes": "Ephemeral helper run through `docker compose run`, not a long-lived service."
+    },
+    "ollama": {
+      "kind": "host",
+      "profiles": [],
+      "module": "core",
+      "container_name": null,
+      "endpoint": "http://localhost:11434/api/tags",
+      "ports": [
+        11434
+      ],
+      "required_env": [],
+      "notes": "Optional host process used by the local LiteLLM alias."
+    }
+  },
+  "data_flow": [
+    "Clients and tools call LiteLLM on localhost:4000.",
+    "LiteLLM routes requests to cloud providers or the host Ollama runtime.",
+    "LiteLLM and Open WebUI persist state in Postgres.",
+    "Open WebUI keeps local UI data in the open_webui_data volume."
+  ],
+  "required_env_keys": [
+    "LITELLM_KEY",
+    "WEBUI_SECRET_KEY",
+    "POSTGRES_USER",
+    "POSTGRES_DB",
+    "POSTGRES_PASSWORD",
+    "DATABASE_HOST",
+    "DATABASE_PORT",
+    "DATABASE_NAME",
+    "DATABASE_USER",
+    "DATABASE_USERNAME",
+    "DATABASE_PASSWORD",
+    "DATABASE_SCHEMA",
+    "DATABASE_URL"
+  ],
+  "optional_env_keys": [
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "GOOGLE_API_KEY",
+    "OPENROUTER_API_KEY",
+    "WEBUI_ADMIN_EMAIL",
+    "WEBUI_ADMIN_PASSWORD",
+    "WEBUI_ADMIN_NAME"
+  ],
+  "limitations": [
+    "Ollama remains a host-managed dependency and is not started or stopped by Docker Compose.",
+    "The static dashboard shows generated snapshots rather than live telemetry.",
+    "Open WebUI can take longer on the first warm start because it performs migrations and asset initialization.",
+    "The coding module is intentionally on-demand rather than always running."
+  ],
+  "source_of_truth_files": [
+    "README.md",
+    "docs/ARCHITECTURE.md",
+    "docs/OPERATIONS.md",
+    "docs/TROUBLESHOOTING.md",
+    "docs/KNOWN_LIMITATIONS.md",
+    "dashboards/index.html",
+    "ops/dashboard.config.json",
+    "ops/extensions.catalog.json",
+    "docker-compose.yml",
+    "litellm-config.yaml",
+    ".env.template",
+    "stack.ps1",
+    "stack.sh"
+  ]
+}
